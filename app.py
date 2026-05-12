@@ -1,6 +1,11 @@
+import json
 import logging
 
+from flask import Flask, jsonify, request
+
 from geo import get_distance, get_geo_info
+
+app = Flask(__name__)
 
 logging.basicConfig(
     level=logging.INFO,
@@ -10,7 +15,6 @@ logging.basicConfig(
 
 
 def handler(event, context):
-
     logging.info("Request: %r", event)
 
     response = {
@@ -27,20 +31,41 @@ def handler(event, context):
 
 
 def handle_dialog(res, req):
-
     user_id = req["session"]["user_id"]
+    session = res["session"]
 
     if req["session"]["new"]:
-        res["response"]["text"] = (
-            "Привет! Я могу сказать в какой стране город или сказать расстояние между городами!"
-        )
+        res["response"]["text"] = "Привет! Назови своё имя!"
+        session["first_name"] = None
+        session["game_started"] = False
+        session["guessed_cities"] = []
+        return
 
+    if session[user_id]["first_name"] is None:
+        first_name = get_first_name(req)
+        if first_name is None:
+            res["response"]["text"] = "Не расслышала имя. Повтори, пожалуйста!"
+        else:
+            session[user_id]["first_name"] = first_name
+            if "guessed_cities" not in session[user_id]:
+                session[user_id]["guessed_cities"] = []
+            res["response"]["text"] = (
+                f"Приятно познакомиться, {first_name.title()}. Я Алиса.\n"
+                f"Я могу сказать в какой стране город или сказать расстояние между городами!"
+            )
+            res["response"]["buttons"] = [
+                {"title": "Да", "hide": True},
+                {"title": "Нет", "hide": True},
+            ]
         return
 
     cities = get_cities(req)
+    name = session[user_id]["first_name"]
 
     if len(cities) == 0:
-        res["response"]["text"] = "Ты не написал название не одного города!"
+        res["response"]["text"] = (
+            f"{name.title()}, ты не написал название не одного города!"
+        )
 
     elif len(cities) == 1:
         res["response"]["text"] = "Этот город в стране - " + get_geo_info(
@@ -57,11 +82,10 @@ def handle_dialog(res, req):
         )
 
     else:
-        res["response"]["text"] = "Слишком много городов!"
+        res["response"]["text"] = f"{name.title()}, слишком много городов!"
 
 
 def get_cities(req):
-
     cities = []
 
     for entity in req["request"]["nlu"]["entities"]:
@@ -70,3 +94,32 @@ def get_cities(req):
                 cities.append(entity["value"]["city"])
 
     return cities
+
+
+def get_first_name(req):
+    for entity in req["request"]["nlu"]["entities"]:
+        if entity["type"] == "YANDEX.FIO":
+            return entity["value"].get("first_name", None)
+    return None
+
+
+@app.route("/")
+def health():
+    return ""
+
+
+@app.route("/post", methods=["POST"])
+def main():
+    logging.info("Request: %r", request.json)
+    response = {
+        "session": request.json["session"],
+        "version": request.json["version"],
+        "response": {"end_session": False},
+    }
+    handle_dialog(response, request.json)
+    logging.info("Request: %r", response)
+    return jsonify(response)
+
+
+if __name__ == "__main__":
+    app.run()
