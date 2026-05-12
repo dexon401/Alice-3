@@ -1,40 +1,41 @@
+from math import atan2, cos, radians, sin, sqrt
+
 import requests
-from math import sin, cos, sqrt, atan2, radians
 
 
-def get_coordinates(city):
-    url = "https://geocode-maps.yandex.ru/1.x/"
+def get_geo_info(city_name, type_info):
+    if type_info == "country":
+        url = "https://geocode-maps.yandex.ru/1.x/"
 
-    params = {
-        'geocode': city,
-        'format': 'json',
-        'apikey': "8013b162-6b42-4997-9691-77b7074026e0"
-    }
+        params = {
+            "geocode": city_name,
+            "format": "json",
+            "apikey": "8013b162-6b42-4997-9691-77b7074026e0",
+        }
 
-    response = requests.get(url, params)
-    json = response.json()
-    point_str = json['response']['GeoObjectCollection']['featureMember'][0]['GeoObject']['Point']['pos']
-    point_array = [float(x) for x in point_str.split(' ')]
+        response = requests.get(url, params)
+        json = response.json()
 
-    return point_array
+        return json["response"]["GeoObjectCollection"]["featureMember"][0]["GeoObject"][
+            "metaDataProperty"
+        ]["GeocoderMetaData"]["AddressDetails"]["Country"]["CountryName"]
+    elif type_info == "coordinates":
+        url = "https://geocode-maps.yandex.ru/1.x/"
 
+        params = {
+            "geocode": city_name,
+            "format": "json",
+            "apikey": "8013b162-6b42-4997-9691-77b7074026e0",
+        }
 
-def get_country(city):
-    url = "https://geocode-maps.yandex.ru/1.x/"
+        response = requests.get(url, params)
+        json = response.json()
+        point_str = json["response"]["GeoObjectCollection"]["featureMember"][0][
+            "GeoObject"
+        ]["Point"]["pos"]
+        point_array = [float(x) for x in point_str.split(" ")]
 
-    params = {
-        'geocode': city,
-        'format': 'json',
-        'apikey': "8013b162-6b42-4997-9691-77b7074026e0"
-    }
-
-    response = requests.get(url, params)
-    json = response.json()
-
-    return \
-        json['response']['GeoObjectCollection']['featureMember'][0]['GeoObject']['metaDataProperty'][
-            'GeocoderMetaData'][
-            'AddressDetails']['Country']['CountryName']
+        return point_array
 
 
 def get_distance(p1, p2):
