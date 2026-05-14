@@ -116,7 +116,7 @@ def health():
 @app.route("/post", methods=["POST"])
 def main():
     logging.info("Request: %r", request.json)
-    response = handler(request.json)
+    response = handler(request.json, None)
     logging.info("Request: %r", response)
     return jsonify(response)
 
