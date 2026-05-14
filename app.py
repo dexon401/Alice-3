@@ -37,6 +37,9 @@ def handle_dialog(res, req):
     user_id = req["session"]["user_id"]
 
     if req["session"]["new"]:
+        if user_id not in sessionStorage:
+            sessionStorage[user_id] = {}
+        
         res["response"]["text"] = "Привет! Назови своё имя!"
         sessionStorage[user_id]["first_name"] = None
         sessionStorage[user_id]["game_started"] = False
@@ -113,12 +116,7 @@ def health():
 @app.route("/post", methods=["POST"])
 def main():
     logging.info("Request: %r", request.json)
-    response = {
-        "session": request.json["session"],
-        "version": request.json["version"],
-        "response": {"end_session": False},
-    }
-    handle_dialog(response, request.json)
+    response = handler(request.json)
     logging.info("Request: %r", response)
     return jsonify(response)
 
