@@ -15,6 +15,7 @@ logging.basicConfig(
     format="%(asctime)s %(levelname)s %(name)s %(message)s",
 )
 
+sessionStorage = {}
 
 def handler(event, context):
     logging.info("Request: %r", event)
@@ -34,23 +35,22 @@ def handler(event, context):
 
 def handle_dialog(res, req):
     user_id = req["session"]["user_id"]
-    session = res["session"]
 
     if req["session"]["new"]:
         res["response"]["text"] = "Привет! Назови своё имя!"
-        session["first_name"] = None
-        session["game_started"] = False
-        session["guessed_cities"] = []
+        sessionStorage[user_id]["first_name"] = None
+        sessionStorage[user_id]["game_started"] = False
+        sessionStorage[user_id]["guessed_cities"] = []
         return
 
-    if session[user_id]["first_name"] is None:
+    if sessionStorage[user_id]["first_name"] is None:
         first_name = get_first_name(req)
         if first_name is None:
             res["response"]["text"] = "Не расслышала имя. Повтори, пожалуйста!"
         else:
-            session[user_id]["first_name"] = first_name
-            if "guessed_cities" not in session[user_id]:
-                session[user_id]["guessed_cities"] = []
+            sessionStorage[user_id]["first_name"] = first_name
+            if "guessed_cities" not in sessionStorage[user_id]:
+                sessionStorage[user_id]["guessed_cities"] = []
             res["response"]["text"] = (
                 f"Приятно познакомиться, {first_name.title()}. Я Алиса.\n"
                 f"Я могу сказать в какой стране город или сказать расстояние между городами!"
@@ -62,7 +62,7 @@ def handle_dialog(res, req):
         return
 
     cities = get_cities(req)
-    name = session[user_id]["first_name"]
+    name = sessionStorage[user_id]["first_name"]
 
     if len(cities) == 0:
         res["response"]["text"] = (
