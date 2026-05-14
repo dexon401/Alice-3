@@ -37,13 +37,13 @@ def handle_dialog(res, req):
     user_id = req["session"]["user_id"]
 
     if req["session"]["new"]:
-        if user_id not in sessionStorage:
-            sessionStorage[user_id] = {}
         
         res["response"]["text"] = "Привет! Назови своё имя!"
-        sessionStorage[user_id]["first_name"] = None
-        sessionStorage[user_id]["game_started"] = False
-        sessionStorage[user_id]["guessed_cities"] = []
+        sessionStorage[user_id] = {
+            "first_name": None,
+            "game_started": False,
+            "guessed_cities": [],
+        }
         return
 
     if sessionStorage[user_id]["first_name"] is None:
